@@ -72,20 +72,48 @@ Copy `config.example.json` to get started.
   },
   "posts": {
     "message_a": [
-      {"channel": "C0000000000", "message": "Sample message A", "token": "secondary",
-       "ssid": ["network-a", "network-*-5g"], "not_ssid": "network-guest",
-       "link_to": {"channel": "C1111111111", "message": "Posted: {link}",
-                   "token": "default"}},
-      {"channel": "C0000000000", "message": "Message for another network", "token": "secondary",
-       "not_ssid": ["network-a", "network-*-5g"]}
+      {
+        "channel": "C0000000000",
+        "message": "Sample message A",
+        "token": "secondary",
+        "ssid": ["network-a", "network-*-5g"],
+        "not_ssid": "network-guest",
+        "link_to": {
+          "channel": "C1111111111",
+          "message": "Posted: {link}",
+          "token": "default"
+        }
+      },
+      {
+        "channel": "C0000000000",
+        "message": "Message for another network",
+        "token": "secondary",
+        "not_ssid": ["network-a", "network-*-5g"]
+      }
     ],
-    "message_b": [{"channel": "C0000000000", "message": "Sample message B", "token": "secondary"}]
+    "message_b": [
+      {
+        "channel": "C0000000000",
+        "message": "Sample message B",
+        "token": "secondary"
+      }
+    ]
   },
   "commands": {
-    "command_a": [{"team": "T0000000000", "channel": "C0000000000",
-                   "command": "/example_action"}],
-    "command_b": [{"team": "T0000000000", "channel": "C0000000000",
-                   "command": "/another_action"}]
+    "command_a": [
+      {
+        "team": "T0000000000",
+        "channel": "C0000000000",
+        "command": "/example_action"
+      }
+    ],
+    "command_b": [
+      {
+        "team": "T0000000000",
+        "channel": "C0000000000",
+        "command": "/another_action"
+      }
+    ]
   }
 }
 ```
@@ -128,9 +156,16 @@ For an iPhone Shortcut, change to this project directory and run `uv run slack-s
 After sending a post with `link_to`, the tool retrieves its permalink and posts it to another channel.
 
 ```json
-{"channel": "C0000000000", "message": "Sample message A", "token": "secondary",
- "link_to": {"channel": "C1111111111", "message": "Posted: {link}",
-             "token": "default"}}
+{
+  "channel": "C0000000000",
+  "message": "Sample message A",
+  "token": "secondary",
+  "link_to": {
+    "channel": "C1111111111",
+    "message": "Posted: {link}",
+    "token": "default"
+  }
+}
 ```
 
 ```
