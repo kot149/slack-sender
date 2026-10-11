@@ -29,11 +29,19 @@ import json
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
+from typing import TypeVar
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 from .config import load_config
+from .desktop import (
+    SlashCommand,
+    parse_commands,
+    preview_commands,
+    send_commands,
+    validate_command,
+)
 from .ssid import (
     SsidCondition,
     SsidUnavailableError,
@@ -63,6 +71,9 @@ class Post:
     token: str = DEFAULT_TOKEN_NAME
     ssid: SsidCondition = field(default_factory=SsidCondition)
     link_to: LinkTo | None = None
+
+
+Entry = TypeVar("Entry", Post, SlashCommand)
 
 
 def load_tokens(cfg: dict) -> dict[str, str]:
@@ -158,9 +169,9 @@ def parse_link_to(value: object, path: str, post_token: str) -> LinkTo | None:
     )
 
 
-def filter_by_ssid(posts: list[Post], ssid: str | None) -> list[Post]:
-    """Return posts matching the SSID conditions and report skipped posts to stderr."""
-    kept: list[Post] = []
+def filter_by_ssid(posts: list[Entry], ssid: str | None) -> list[Entry]:
+    """Return entries matching the SSID conditions and report skipped entries."""
+    kept: list[Entry] = []
     for p in posts:
         if p.ssid.matches(ssid):
             kept.append(p)
@@ -320,34 +331,54 @@ def main() -> int:
 
     try:
         cfg = load_config()
-        tokens = load_tokens(cfg)
         posts = parse_posts(cfg, args.key)
+        commands = parse_commands(cfg, args.key)
+        tokens = load_tokens(cfg) if posts else {}
     except (FileNotFoundError, ValueError, json.JSONDecodeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
-    if not posts:
-        print(f"no posts configured for key='{args.key}', skipping")
+    if not posts and not commands:
+        print(f"no posts or commands configured for key='{args.key}', skipping")
         return 0
 
-    if not args.ignore_ssid and any(not p.ssid.is_empty for p in posts):
+    if posts and commands:
+        entry_label = "posts or commands"
+    elif posts:
+        entry_label = "posts"
+    else:
+        entry_label = "commands"
+    entries = posts + commands
+    if not args.ignore_ssid and any(not p.ssid.is_empty for p in entries):
         ssid = args.ssid
         # Empty include patterns already determine the result, so detection is unnecessary.
-        if ssid is None and any(p.ssid.needs_current_ssid for p in posts):
+        if ssid is None and any(p.ssid.needs_current_ssid for p in entries):
             try:
                 ssid = current_ssid()
             except SsidUnavailableError as e:
                 print(f"error: {e}", file=sys.stderr)
                 return 1
         posts = filter_by_ssid(posts, ssid)
-        if not posts:
-            print("no posts match the current wi-fi network, skipping")
+        commands = filter_by_ssid(commands, ssid)
+        if not posts and not commands:
+            print(f"no {entry_label} match the current wi-fi network, skipping")
             return 0
 
     if args.append:
         posts = [replace(p, message=p.message + args.append) for p in posts]
+        commands = [replace(c, command=c.command + args.append) for c in commands]
+        try:
+            for command in commands:
+                validate_command(command.command, "--append result")
+        except ValueError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
 
-    failures = preview_all(tokens, posts) if args.dry_run else send_all(tokens, posts)
+    if args.dry_run:
+        failures = preview_all(tokens, posts) + preview_commands(commands)
+    else:
+        failures = send_all(tokens, posts) if posts else 0
+        failures += send_commands(commands) if commands else 0
     return 1 if failures else 0
 
 
