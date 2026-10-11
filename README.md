@@ -1,0 +1,167 @@
+# slack-sender
+
+A CLI tool for posting preset messages from `config.json` to Slack.
+
+Each key can contain multiple posts, so `slack-send message_a` can send to multiple channels with different tokens in one run.
+
+## Requirements
+
+- [uv](https://docs.astral.sh/uv/)
+
+## Setup
+
+```sh
+uv sync
+cp config.example.json config.json
+# Edit config.json with your Slack tokens, channels, and messages.
+```
+
+## Usage
+
+```sh
+uv run slack-send message_a                     # Send posts.message_a
+uv run slack-send message_b                     # Send posts.message_b
+uv run slack-send message_b --append " (extra)" # Append text to each message
+uv run slack-send message_a --ssid network-a    # Evaluate conditions for this SSID
+uv run slack-send message_a --ignore-ssid       # Send all posts regardless of SSID
+uv run slack-send message_a --dry-run           # Preview posts without sending
+```
+
+| Argument or option | Purpose |
+| --- | --- |
+| `key` | Select `posts.<key>` in `config.json` |
+| `--append TEXT` | Append `TEXT` to each message |
+| `--ssid NAME` | Use `NAME` instead of detecting the current SSID |
+| `--ignore-ssid` | Ignore `ssid` and `not_ssid` conditions and send all posts |
+| `--dry-run` | Show planned posts without sending them to Slack |
+
+If the selected key has no posts, the command sends nothing and exits successfully. If any post fails, it exits with code 1.
+
+## Dry run
+
+`--dry-run` applies SSID filtering and `--append`, then shows the planned posts without sending them.
+
+```sh
+$ uv run slack-send message_b --dry-run
+dry-run: token=secondary channel=C0000000000 message=Sample message B
+```
+
+- You can combine it with other options. For example, `--ssid` shows which posts would be sent on a given network.
+- Only token names (`token=`) are shown, never token values.
+- A post whose `token` is missing from `slack_bot_tokens` is reported on stderr and causes exit code 1.
+- Channel existence and token validity are not checked with Slack.
+
+## Configuration (`config.json`)
+
+Copy `config.example.json` to get started.
+
+```json
+{
+  "slack_bot_tokens": {
+    "default": "xoxb-...",
+    "secondary": "xoxb-..."
+  },
+  "posts": {
+    "message_a": [
+      {"channel": "C0000000000", "message": "Sample message A", "token": "secondary",
+       "ssid": ["network-a", "network-*-5g"], "not_ssid": "network-guest",
+       "link_to": {"channel": "C1111111111", "message": "Posted: {link}",
+                   "token": "default"}},
+      {"channel": "C0000000000", "message": "Message for another network", "token": "secondary",
+       "not_ssid": ["network-a", "network-*-5g"]}
+    ],
+    "message_b": [{"channel": "C0000000000", "message": "Sample message B", "token": "secondary"}]
+  }
+}
+```
+
+- **`slack_bot_tokens`**: Named tokens. Posts without a `token` use `default`. A value matching another key is resolved as an alias.
+- **`posts.<key>`**: An array of posts that can target multiple channels and tokens. Keys can have any name and correspond to the `slack-send <key>` argument.
+- **`ssid` / `not_ssid`**: Per-post Wi-Fi conditions, described below.
+- **`link_to`**: Post a link to the original message in another channel, as described below.
+
+`config.json` is ignored by Git. Keep your tokens out of commits.
+
+## Forwarding post links (`link_to`)
+
+After sending a post with `link_to`, the tool retrieves its permalink and posts it to another channel.
+
+```json
+{"channel": "C0000000000", "message": "Sample message A", "token": "secondary",
+ "link_to": {"channel": "C1111111111", "message": "Posted: {link}",
+             "token": "default"}}
+```
+
+```
+sent: token=secondary channel=C0000000000 ts=1700000000.000100
+linked: token=default channel=C1111111111 ts=1700000000.000200
+```
+
+- `{link}` in `message` is replaced with the permalink. A `message` without `{link}` is a configuration error.
+- If `message` is omitted, only the permalink is posted.
+- If `token` is omitted, the original post's token is used. That token must also be able to post to the destination channel.
+- Set `token` to a `slack_bot_tokens` key to use a different token for forwarding. The original post's token is always used to retrieve its permalink.
+- If the original post fails, its link is not forwarded.
+- If permalink retrieval or forwarding fails, the original post remains and the command exits with code 1.
+- `--append` affects only the original message, not `link_to.message`.
+- With `--dry-run`, the permalink is unavailable, so `{link}` appears as `(link unavailable)`.
+
+## Wi-Fi SSID conditions
+
+Add `ssid` (an allowlist) and `not_ssid` (an exclusion list) to a post to control sending based on the current Wi-Fi SSID. In the example above, the specified networks receive “Sample message A”; other networks receive “Message for another network.”
+
+- Values can be strings or arrays. Wildcards such as `network-*` use `fnmatch` syntax.
+- Matching is case sensitive.
+- If both `ssid` and `not_ssid` are set, the SSID must match `ssid` and must not match `not_ssid`.
+- Posts without either condition are always sent.
+- When Wi-Fi is disconnected, posts with `ssid` are skipped, while posts with only `not_ssid` are sent.
+- If no posts match, nothing is sent and the command exits successfully. Skipped posts are reported as `skipped:` on stderr.
+- If a key has no posts requiring SSID detection, the tool does not attempt detection.
+
+### Empty values
+
+| Configuration | Meaning |
+| --- | --- |
+| Omit `ssid` | Send on any network, including when Wi-Fi is disconnected |
+| `"ssid": "*"` | Send for any SSID when connected to Wi-Fi |
+| `"ssid": ""` / `"ssid": []` | Never send, useful for temporarily disabling a post |
+| `"not_ssid": ""` / `"not_ssid": []` | Exclude nothing, equivalent to omitting `not_ssid` |
+
+A post with an empty `ssid` is skipped, with the reason reported on stderr:
+
+```
+skipped: channel=C0000000000 does not match any network (ssid is empty)
+```
+
+### macOS hides SSIDs by default
+
+Since macOS 14.4, the SSID is hidden as `<redacted>` by default, causing `slack-send` to exit with an error:
+
+```
+error: SSID is hidden by macOS. Run `sudo ipconfig setverbose 1` to unhide it ...
+```
+
+Enable verbose mode in `ipconfig` to read the SSID:
+
+```sh
+sudo ipconfig setverbose 1
+ipconfig getsummary en0 | grep ' SSID'
+```
+
+This setting exists only in configd memory, so it must be enabled **after every reboot**. To run it automatically at startup, install the LaunchDaemon:
+
+```sh
+uv run slack-send-setup
+```
+
+This installs `/Library/LaunchDaemons/local.ipconfig-setverbose.plist`, activates it immediately, and checks whether the SSID is readable. Installation requires root privileges, so `sudo` prompts for a password. Run `uv run slack-send-setup --uninstall` to remove it.
+
+Verbose mode also increases IPConfiguration debug logging. If that is a concern, use `--ssid NAME` to provide the SSID explicitly or `--ignore-ssid` to ignore the conditions.
+
+The CLI cannot request location permission to reveal the SSID. Permission requests require an app bundle, and requests from unbundled processes (such as Python or a standalone binary) are discarded before reaching locationd. Reading Wi-Fi information also requires the `com.apple.developer.networking.wifi-info` entitlement, which requires signing through the Apple Developer Program.
+
+## Tests
+
+```sh
+uv run pytest
+```

@@ -1,0 +1,35 @@
+{
+  "slack_bot_tokens": {
+    "default": "xoxb-XXXXXXXXXX",
+    "secondary": "xoxb-XXXXXXXXXX"
+  },
+  "posts": {
+    "message_a": [
+      {
+        "channel": "C0000000000",
+        "message": "Sample message A",
+        "token": "secondary",
+        "ssid": ["network-a", "network-*-5g"],
+        "not_ssid": "network-guest",
+        "link_to": {
+          "channel": "C1111111111",
+          "message": "Posted: {link}",
+          "token": "default"
+        }
+      },
+      {
+        "channel": "C0000000000",
+        "message": "Message for another network",
+        "token": "secondary",
+        "not_ssid": ["network-a", "network-*-5g"]
+      }
+    ],
+    "message_b": [
+      {
+        "channel": "C0000000000",
+        "message": "Sample message B",
+        "token": "secondary"
+      }
+    ]
+  }
+}
