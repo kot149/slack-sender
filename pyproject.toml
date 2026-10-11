@@ -9,8 +9,8 @@ dependencies = [
 ]
 
 [project.scripts]
-slack-send = "slack_sender.notify:main"
-slack-send-setup = "slack_sender.setup:main"
+slack-sender = "slack_sender.notify:main"
+slack-sender-setup = "slack_sender.setup:main"
 
 [build-system]
 requires = ["hatchling"]

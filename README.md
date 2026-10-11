@@ -2,7 +2,7 @@
 
 A CLI tool for posting preset messages and submitting slash commands from `config.json` to Slack.
 
-Each key can contain multiple posts or slash commands. For example, `slack-send message_a` can post to multiple channels with different tokens in one run.
+Each key can contain multiple posts or slash commands. For example, `slack-sender message_a` can post to multiple channels with different tokens in one run.
 
 ## Requirements
 
@@ -19,14 +19,14 @@ cp config.example.json config.json
 ## Usage
 
 ```sh
-uv run slack-send message_a                     # Send posts.message_a
-uv run slack-send message_b                     # Send posts.message_b
-uv run slack-send message_b --append " (extra)" # Append text to each message
-uv run slack-send message_a --ssid network-a    # Evaluate conditions for this SSID
-uv run slack-send message_a --ignore-ssid       # Send all posts regardless of SSID
-uv run slack-send message_a --dry-run           # Preview posts without sending
-uv run slack-send command_a --dry-run           # Preview a slash command
-uv run slack-send command_a                     # Submit the configured command
+uv run slack-sender message_a                     # Send posts.message_a
+uv run slack-sender message_b                     # Send posts.message_b
+uv run slack-sender message_b --append " (extra)" # Append text to each message
+uv run slack-sender message_a --ssid network-a    # Evaluate conditions for this SSID
+uv run slack-sender message_a --ignore-ssid       # Send all posts regardless of SSID
+uv run slack-sender message_a --dry-run           # Preview posts without sending
+uv run slack-sender command_a --dry-run           # Preview a slash command
+uv run slack-sender command_a                     # Submit the configured command
 ```
 
 | Argument or option | Purpose |
@@ -44,7 +44,7 @@ If the selected key has no posts or commands, the CLI does nothing and exits suc
 `--dry-run` applies SSID filtering and `--append`, then shows the planned posts and commands without sending them.
 
 ```sh
-$ uv run slack-send message_b --dry-run
+$ uv run slack-sender message_b --dry-run
 dry-run: token=secondary channel=C0000000000 message=Sample message B
 ```
 
@@ -92,7 +92,7 @@ Copy `config.example.json` to get started.
 
 - **`slack_bot_tokens`**: Named tokens. Posts without a `token` use `default`. A value matching another key is resolved as an alias.
 - **`slack_command_sessions`**: Browser session credentials keyed by workspace `team` ID. Commands use these credentials, independent of post tokens.
-- **`posts.<key>`**: An array of posts that can target multiple channels and tokens. Keys can have any name and correspond to the `slack-send <key>` argument.
+- **`posts.<key>`**: An array of posts that can target multiple channels and tokens. Keys can have any name and correspond to the `slack-sender <key>` argument.
 - **`ssid` / `not_ssid`**: Per-post Wi-Fi conditions, described below.
 - **`link_to`**: Post a link to the original message in another channel, as described below.
 - **`commands.<key>`**: Slash commands submitted through the private `chat.command` API. Each entry has a workspace `team` ID, a conversation `channel` ID, and a slash `command`.
@@ -121,7 +121,7 @@ Copy the `xoxc-...` token from an authenticated Slack browser request and the pa
 
 The `submitted:` output means the API returned `ok: true`. It does not confirm that the connected app completed the action. Check the app's response before retrying a command that can have side effects.
 
-For an iPhone Shortcut, change to this project directory and run `uv run slack-send command_a` or another configured key through “Run Script over SSH” on the Mac. The Mac must be awake for SSH to run, but its screen may be locked.
+For an iPhone Shortcut, change to this project directory and run `uv run slack-sender command_a` or another configured key through “Run Script over SSH” on the Mac. The Mac must be awake for SSH to run, but its screen may be locked.
 
 ## Forwarding post links (`link_to`)
 
@@ -176,7 +176,7 @@ skipped: channel=C0000000000 does not match any network (ssid is empty)
 
 ### macOS hides SSIDs by default
 
-Since macOS 14.4, the SSID is hidden as `<redacted>` by default, causing `slack-send` to exit with an error:
+Since macOS 14.4, the SSID is hidden as `<redacted>` by default, causing `slack-sender` to exit with an error:
 
 ```
 error: SSID is hidden by macOS. Run `sudo ipconfig setverbose 1` to unhide it ...
@@ -192,10 +192,10 @@ ipconfig getsummary en0 | grep ' SSID'
 This setting exists only in configd memory, so it must be enabled **after every reboot**. To run it automatically at startup, install the LaunchDaemon:
 
 ```sh
-uv run slack-send-setup
+uv run slack-sender-setup
 ```
 
-This installs `/Library/LaunchDaemons/local.ipconfig-setverbose.plist`, activates it immediately, and checks whether the SSID is readable. Installation requires root privileges, so `sudo` prompts for a password. Run `uv run slack-send-setup --uninstall` to remove it.
+This installs `/Library/LaunchDaemons/local.ipconfig-setverbose.plist`, activates it immediately, and checks whether the SSID is readable. Installation requires root privileges, so `sudo` prompts for a password. Run `uv run slack-sender-setup --uninstall` to remove it.
 
 Verbose mode also increases IPConfiguration debug logging. If that is a concern, use `--ssid NAME` to provide the SSID explicitly or `--ignore-ssid` to ignore the conditions.
 

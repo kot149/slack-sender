@@ -169,21 +169,21 @@ class TestMainSsidHandling:
         self, monkeypatch, config, sent
     ):
         self._detect(monkeypatch, ssid="network-a")
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a"])
 
         assert notify.main() == 0
         assert [p.channel for p in sent] == ["C-network-a"]
 
     def test_ssid_option_overrides_detection(self, monkeypatch, config, sent):
         self._detect(monkeypatch, error=AssertionError("must not detect"))
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a", "--ssid", "other-free"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a", "--ssid", "other-free"])
 
         assert notify.main() == 0
         assert [p.channel for p in sent] == ["C-network-b"]
 
     def test_ignore_ssid_sends_every_post(self, monkeypatch, config, sent):
         self._detect(monkeypatch, error=AssertionError("must not detect"))
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a", "--ignore-ssid"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a", "--ignore-ssid"])
 
         assert notify.main() == 0
         assert [p.channel for p in sent] == ["C-network-a", "C-network-b"]
@@ -192,14 +192,14 @@ class TestMainSsidHandling:
         self, monkeypatch, config, sent
     ):
         self._detect(monkeypatch, error=AssertionError("must not detect"))
-        monkeypatch.setattr("sys.argv", ["slack-send", "plain"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "plain"])
 
         assert notify.main() == 0
         assert [p.channel for p in sent] == ["C-any"]
 
     def test_fails_when_the_ssid_cannot_be_read(self, monkeypatch, config, sent, capsys):
         self._detect(monkeypatch, error=SsidUnavailableError("SSID is hidden by macOS"))
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a"])
 
         assert notify.main() == 1
         assert sent == []
@@ -214,7 +214,7 @@ class TestMainSsidHandling:
         }
         monkeypatch.setattr(notify, "load_config", lambda: cfg)
         self._detect(monkeypatch, ssid="network-b")
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a"])
 
         assert notify.main() == 0
         assert sent == []
@@ -229,7 +229,7 @@ class TestMainSsidHandling:
         }
         monkeypatch.setattr(notify, "load_config", lambda: cfg)
         self._detect(monkeypatch, error=AssertionError("must not detect"))
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a"])
 
         assert notify.main() == 0
         assert sent == []
@@ -240,7 +240,7 @@ class TestMainSsidHandling:
     ):
         self._detect(monkeypatch, ssid="network-a")
         monkeypatch.setattr(
-            "sys.argv", ["slack-send", "message_a", "--dry-run", "--append", " (extra)"]
+            "sys.argv", ["slack-sender", "message_a", "--dry-run", "--append", " (extra)"]
         )
 
         assert notify.main() == 0
@@ -255,7 +255,7 @@ class TestMainSsidHandling:
             "posts": {"message_a": [{"channel": "C1", "message": "m", "token": "ghost"}]},
         }
         monkeypatch.setattr(notify, "load_config", lambda: cfg)
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a", "--dry-run"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a", "--dry-run"])
 
         assert notify.main() == 1
         assert sent == []
@@ -263,7 +263,7 @@ class TestMainSsidHandling:
 
     def test_append_keeps_the_ssid_condition(self, monkeypatch, config, sent):
         self._detect(monkeypatch, ssid="network-a")
-        monkeypatch.setattr("sys.argv", ["slack-send", "message_a", "--append", " (extra)"])
+        monkeypatch.setattr("sys.argv", ["slack-sender", "message_a", "--append", " (extra)"])
 
         assert notify.main() == 0
         assert sent[0].message == "Message A (extra)"

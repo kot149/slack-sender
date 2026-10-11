@@ -71,7 +71,7 @@ def test_main_loads_command_session(monkeypatch):
         "send_commands",
         lambda sessions, items: sent.append((sessions, items)) or 0,
     )
-    monkeypatch.setattr("sys.argv", ["slack-send", "action"])
+    monkeypatch.setattr("sys.argv", ["slack-sender", "action"])
 
     assert notify.main() == 0
     assert sent == [

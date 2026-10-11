@@ -137,7 +137,7 @@ class TestReportSsid:
 class TestMain:
     def test_installs_and_reports_the_ssid_by_default(self, monkeypatch, capsys):
         # Arrange
-        monkeypatch.setattr(sys, "argv", ["slack-send-setup"])
+        monkeypatch.setattr(sys, "argv", ["slack-sender-setup"])
         monkeypatch.setattr(setup_mod, "install", lambda: None)
         monkeypatch.setattr(setup_mod, "current_ssid", lambda: "network-a")
 
@@ -152,7 +152,7 @@ class TestMain:
 
     def test_uninstall_skips_the_ssid_check(self, monkeypatch, capsys):
         # Arrange
-        monkeypatch.setattr(sys, "argv", ["slack-send-setup", "--uninstall"])
+        monkeypatch.setattr(sys, "argv", ["slack-sender-setup", "--uninstall"])
         monkeypatch.setattr(setup_mod, "uninstall", lambda: None)
         monkeypatch.setattr(setup_mod, "current_ssid", unexpected_ssid_read)
 
@@ -165,7 +165,7 @@ class TestMain:
 
     def test_refuses_to_run_outside_macos(self, monkeypatch, capsys):
         # Arrange
-        monkeypatch.setattr(sys, "argv", ["slack-send-setup"])
+        monkeypatch.setattr(sys, "argv", ["slack-sender-setup"])
         monkeypatch.setattr(sys, "platform", "linux")
         monkeypatch.setattr(setup_mod, "install", unexpected_install)
 
