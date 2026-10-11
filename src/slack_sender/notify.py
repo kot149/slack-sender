@@ -35,8 +35,9 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 from .config import load_config
-from .desktop import (
+from .commands import (
     SlashCommand,
+    load_sessions,
     parse_commands,
     preview_commands,
     send_commands,
@@ -334,6 +335,7 @@ def main() -> int:
         posts = parse_posts(cfg, args.key)
         commands = parse_commands(cfg, args.key)
         tokens = load_tokens(cfg) if posts else {}
+        sessions = load_sessions(cfg) if commands and not args.dry_run else {}
     except (FileNotFoundError, ValueError, json.JSONDecodeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -378,7 +380,7 @@ def main() -> int:
         failures = preview_all(tokens, posts) + preview_commands(commands)
     else:
         failures = send_all(tokens, posts) if posts else 0
-        failures += send_commands(commands) if commands else 0
+        failures += send_commands(sessions, commands) if commands else 0
     return 1 if failures else 0
 
 

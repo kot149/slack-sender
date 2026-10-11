@@ -2,7 +2,7 @@
 
 A CLI tool for posting preset messages and submitting slash commands from `config.json` to Slack.
 
-Each key can contain multiple posts or desktop commands. For example, `slack-send message_a` can post to multiple channels with different tokens in one run.
+Each key can contain multiple posts or slash commands. For example, `slack-send message_a` can post to multiple channels with different tokens in one run.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ uv run slack-send message_b --append " (extra)" # Append text to each message
 uv run slack-send message_a --ssid network-a    # Evaluate conditions for this SSID
 uv run slack-send message_a --ignore-ssid       # Send all posts regardless of SSID
 uv run slack-send message_a --dry-run           # Preview posts without sending
-uv run slack-send command_a --dry-run           # Preview a Slack desktop command
+uv run slack-send command_a --dry-run           # Preview a slash command
 uv run slack-send command_a                     # Submit the configured command
 ```
 
@@ -52,7 +52,7 @@ dry-run: token=secondary channel=C0000000000 message=Sample message B
 - Only token names (`token=`) are shown, never token values.
 - A post whose `token` is missing from `slack_bot_tokens` is reported on stderr and causes exit code 1.
 - Channel existence and token validity are not checked with Slack.
-- Desktop commands need no bot token. A dry run does not check whether Slack is open or the target conversation exists.
+- Slash commands use a Slack browser session. A dry run does not check session validity or whether the target conversation exists.
 
 ## Configuration (`config.json`)
 
@@ -63,6 +63,12 @@ Copy `config.example.json` to get started.
   "slack_bot_tokens": {
     "default": "xoxb-...",
     "secondary": "xoxb-..."
+  },
+  "slack_command_sessions": {
+    "T0000000000": {
+      "token": "xoxc-XXXXXXXXXX",
+      "cookie": "xoxd-XXXXXXXXXX"
+    }
   },
   "posts": {
     "message_a": [
@@ -85,16 +91,17 @@ Copy `config.example.json` to get started.
 ```
 
 - **`slack_bot_tokens`**: Named tokens. Posts without a `token` use `default`. A value matching another key is resolved as an alias.
+- **`slack_command_sessions`**: Browser session credentials keyed by workspace `team` ID. Commands use these credentials, independent of post tokens.
 - **`posts.<key>`**: An array of posts that can target multiple channels and tokens. Keys can have any name and correspond to the `slack-send <key>` argument.
 - **`ssid` / `not_ssid`**: Per-post Wi-Fi conditions, described below.
 - **`link_to`**: Post a link to the original message in another channel, as described below.
-- **`commands.<key>`**: Slash commands submitted through Slack Desktop on macOS. Each entry has a workspace `team` ID, a conversation `channel` ID, and a slash `command`.
+- **`commands.<key>`**: Slash commands submitted through the private `chat.command` API. Each entry has a workspace `team` ID, a conversation `channel` ID, and a slash `command`.
 
 `config.json` is ignored by Git. Keep your tokens out of commits.
 
-## Slack Desktop commands
+## Slash commands
 
-`commands.<key>` works with the existing key selection, Wi-Fi conditions, `--append`, `--ignore-ssid`, and `--dry-run` options. A key can contain multiple commands, posts, or both. Commands use the signed-in Slack Desktop app, not `slack_bot_tokens`.
+`commands.<key>` works with the existing key selection, Wi-Fi conditions, `--append`, `--ignore-ssid`, and `--dry-run` options. A key can contain multiple commands, posts, or both. Commands use the browser session for their `team` ID.
 
 ```json
 "commands": {
@@ -108,11 +115,13 @@ Copy `config.example.json` to get started.
 }
 ```
 
-The command must start with `/` and stay on one line. `team` and `channel` are Slack IDs, not names. Use a conversation where the command works when entered manually. The CLI copies the command to the clipboard, opens the conversation with a Slack deep link, brings Slack to the foreground, pastes, presses Return, then presses Command+Return. It replaces the current clipboard contents. It requires a logged-in, unlocked macOS desktop session and permission for the terminal or SSH process to control Slack through macOS Accessibility and Automation settings. Other desktop activity can interfere with the keystrokes.
+The command must start with `/` and stay on one line. `team` and `channel` are Slack IDs, not names. Use a conversation where the command works when entered manually. The CLI sends the command name and any following text separately to `chat.command`. It does not need Slack Desktop or an unlocked screen. The host running the CLI must still be awake and connected to the network.
 
-The `submitted:` output means the keystrokes completed. It does not confirm that Slack accepted the command or that the connected app completed the action. Check the app's response before retrying a command that can have side effects.
+Copy the `xoxc-...` token from an authenticated Slack browser request and the paired `d` cookie (`xoxd-...`) from the same browser session into `slack_command_sessions.<team>`. Both credentials are sensitive and may expire. A bot token from `slack_bot_tokens` cannot replace them. The private API can change without notice.
 
-For an iPhone Shortcut, change to this project directory and run `uv run slack-send command_a` or another configured key through “Run Script over SSH” on the Mac. The Mac must be awake and its desktop session available.
+The `submitted:` output means the API returned `ok: true`. It does not confirm that the connected app completed the action. Check the app's response before retrying a command that can have side effects.
+
+For an iPhone Shortcut, change to this project directory and run `uv run slack-send command_a` or another configured key through “Run Script over SSH” on the Mac. The Mac must be awake for SSH to run, but its screen may be locked.
 
 ## Forwarding post links (`link_to`)
 

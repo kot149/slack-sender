@@ -3,6 +3,12 @@
     "default": "xoxb-XXXXXXXXXX",
     "secondary": "xoxb-XXXXXXXXXX"
   },
+  "slack_command_sessions": {
+    "T0000000000": {
+      "token": "xoxc-XXXXXXXXXX",
+      "cookie": "xoxd-XXXXXXXXXX"
+    }
+  },
   "posts": {
     "message_a": [
       {
