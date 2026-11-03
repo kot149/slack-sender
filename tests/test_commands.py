@@ -65,7 +65,7 @@ def test_main_loads_command_session(monkeypatch):
         "slack_command_sessions": {"T1": {"token": "xoxc-one", "cookie": "xoxd-one"}},
     }
     sent = []
-    monkeypatch.setattr(notify, "load_config", lambda: cfg)
+    monkeypatch.setattr(notify, "load_config", lambda path=None: cfg)
     monkeypatch.setattr(
         notify,
         "send_commands",
@@ -77,3 +77,12 @@ def test_main_loads_command_session(monkeypatch):
     assert sent == [
         ({"T1": SlackSession("xoxc-one", "xoxd-one")}, [SlashCommand("T1", "C1", "/example")])
     ]
+
+
+def test_main_reads_the_config_option(monkeypatch):
+    paths = []
+    monkeypatch.setattr(notify, "load_config", lambda path=None: paths.append(path) or {})
+    monkeypatch.setattr("sys.argv", ["slack-sender", "action", "--config", "test.json"])
+
+    assert notify.main() == 0
+    assert paths == ["test.json"]

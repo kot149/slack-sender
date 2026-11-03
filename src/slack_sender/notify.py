@@ -319,6 +319,12 @@ def main() -> int:
         help="Use this SSID instead of detecting the current one",
     )
     parser.add_argument(
+        "--config",
+        default=None,
+        metavar="PATH",
+        help="Read this config file instead of config.json in the current directory",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show planned posts without sending them",
@@ -331,7 +337,7 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        cfg = load_config()
+        cfg = load_config(args.config)
         posts = parse_posts(cfg, args.key)
         commands = parse_commands(cfg, args.key)
         tokens = load_tokens(cfg) if posts else {}

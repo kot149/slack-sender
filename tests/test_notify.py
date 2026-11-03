@@ -154,7 +154,7 @@ class TestMainSsidHandling:
                 "plain": [{"channel": "C-any", "message": "m"}],
             },
         }
-        monkeypatch.setattr(notify, "load_config", lambda: cfg)
+        monkeypatch.setattr(notify, "load_config", lambda path=None: cfg)
         return cfg
 
     def _detect(self, monkeypatch, ssid=None, error=None):
@@ -212,7 +212,7 @@ class TestMainSsidHandling:
             "slack_bot_tokens": {"default": "xoxb-test"},
             "posts": {"message_a": [{"channel": "C1", "message": "m", "ssid": "network-a"}]},
         }
-        monkeypatch.setattr(notify, "load_config", lambda: cfg)
+        monkeypatch.setattr(notify, "load_config", lambda path=None: cfg)
         self._detect(monkeypatch, ssid="network-b")
         monkeypatch.setattr("sys.argv", ["slack-sender", "message_a"])
 
@@ -227,7 +227,7 @@ class TestMainSsidHandling:
             "slack_bot_tokens": {"default": "xoxb-test"},
             "posts": {"message_a": [{"channel": "C1", "message": "m", "ssid": ""}]},
         }
-        monkeypatch.setattr(notify, "load_config", lambda: cfg)
+        monkeypatch.setattr(notify, "load_config", lambda path=None: cfg)
         self._detect(monkeypatch, error=AssertionError("must not detect"))
         monkeypatch.setattr("sys.argv", ["slack-sender", "message_a"])
 
@@ -254,7 +254,7 @@ class TestMainSsidHandling:
             "slack_bot_tokens": {"default": "xoxb-test"},
             "posts": {"message_a": [{"channel": "C1", "message": "m", "token": "ghost"}]},
         }
-        monkeypatch.setattr(notify, "load_config", lambda: cfg)
+        monkeypatch.setattr(notify, "load_config", lambda path=None: cfg)
         monkeypatch.setattr("sys.argv", ["slack-sender", "message_a", "--dry-run"])
 
         assert notify.main() == 1

@@ -91,3 +91,16 @@ def test_raises_value_error_when_top_level_is_not_an_object(tmp_path, monkeypatc
     # Act / Assert
     with pytest.raises(ValueError, match="JSON object"):
         load_config()
+
+
+def test_loads_an_explicit_path_instead_of_the_working_directory(tmp_path, monkeypatch):
+    # Arrange
+    write_config(tmp_path, monkeypatch, '{"posts": {"cwd": []}}')
+    other = tmp_path / "other.json"
+    other.write_text('{"posts": {"other": []}}', encoding="utf-8")
+
+    # Act
+    cfg = load_config(other)
+
+    # Assert
+    assert cfg == {"posts": {"other": []}}

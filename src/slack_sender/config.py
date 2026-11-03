@@ -1,4 +1,4 @@
-"""Shared config.json loader. Resolves relative to current working directory.
+"""Shared config.json loader. Defaults to config.json in the current working directory.
 
 config.json is parsed as JSON5, so comments (`//`, `/* */`) and trailing commas
 are accepted in addition to plain JSON.
@@ -10,12 +10,12 @@ from pathlib import Path
 import json5
 
 
-def config_path() -> Path:
-    return Path.cwd() / "config.json"
+def config_path(path: str | Path | None = None) -> Path:
+    return Path(path) if path is not None else Path.cwd() / "config.json"
 
 
-def load_config() -> dict:
-    path = config_path()
+def load_config(path: str | Path | None = None) -> dict:
+    path = config_path(path)
     if not path.exists():
         raise FileNotFoundError(
             f"{path} not found. Copy config.example.json to config.json."

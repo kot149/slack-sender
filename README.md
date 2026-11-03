@@ -27,6 +27,7 @@ uv run slack-sender message_a --ignore-ssid       # Send all posts regardless of
 uv run slack-sender message_a --dry-run           # Preview posts without sending
 uv run slack-sender command_a --dry-run           # Preview a slash command
 uv run slack-sender command_a                     # Submit the configured command
+uv run slack-sender message_a --config test.json  # Use another config file
 ```
 
 | Argument or option | Purpose |
@@ -36,6 +37,7 @@ uv run slack-sender command_a                     # Submit the configured comman
 | `--ssid NAME` | Use `NAME` instead of detecting the current SSID |
 | `--ignore-ssid` | Ignore `ssid` and `not_ssid` conditions for all entries |
 | `--dry-run` | Show planned posts and commands without sending them |
+| `--config PATH` | Read `PATH` instead of `config.json` in the current directory |
 
 If the selected key has no posts or commands, the CLI does nothing and exits successfully. If any operation fails, it exits with code 1.
 
