@@ -240,6 +240,27 @@ Verbose mode also increases IPConfiguration debug logging. If that is a concern,
 
 The CLI cannot request location permission to reveal the SSID. Permission requests require an app bundle, and requests from unbundled processes (such as Python or a standalone binary) are discarded before reaching locationd. Reading Wi-Fi information also requires the `com.apple.developer.networking.wifi-info` entitlement, which requires signing through the Apple Developer Program.
 
+## Send limits
+
+Each run is checked against two limits before anything is sent. Runs that use the same config file share them.
+
+| Limit | Default | Config field |
+| --- | --- | --- |
+| Interval before the same key can run again | 60 seconds | `limits.cooldown_sec` |
+| Runs of any key in a sliding window | 10 per 3600 seconds | `limits.max_runs`, `limits.window_sec` |
+
+```json
+{
+  "limits": {"cooldown_sec": 60, "max_runs": 10, "window_sec": 3600}
+}
+```
+
+- Set a value to `0` to disable that limit.
+- A refused run prints `skipped: cooldown: ...` or `skipped: rate limit: ...` on stderr, sends nothing, and exits with code 1. It is not retried later.
+- A run is recorded before sending, so a failed send still counts.
+- `--dry-run` and keys with nothing to send are not limited or recorded.
+- State is stored in `SLACK_SENDER_STATE_DIR`, `$XDG_STATE_HOME/slack-sender`, or `~/.local/state/slack-sender`, one file per resolved config path. A separate config file passed with `--config` therefore has its own limits.
+
 ## Tests
 
 ```sh

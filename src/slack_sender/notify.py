@@ -34,7 +34,8 @@ from typing import TypeVar
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-from .config import load_config
+from .config import config_path, load_config
+from .limits import acquire, parse_limits
 from .commands import (
     SlashCommand,
     load_sessions,
@@ -342,6 +343,7 @@ def main() -> int:
         commands = parse_commands(cfg, args.key)
         tokens = load_tokens(cfg) if posts else {}
         sessions = load_sessions(cfg) if commands and not args.dry_run else {}
+        limits = parse_limits(cfg)
     except (FileNotFoundError, ValueError, json.JSONDecodeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -385,6 +387,14 @@ def main() -> int:
     if args.dry_run:
         failures = preview_all(tokens, posts) + preview_commands(commands)
     else:
+        try:
+            refused = acquire(limits, args.key, config_path(args.config))
+        except (OSError, ValueError) as e:
+            print(f"error: cannot check send limits: {e}", file=sys.stderr)
+            return 1
+        if refused:
+            print(f"skipped: {refused}", file=sys.stderr)
+            return 1
         print(f"run: key={args.key} posts={len(posts)} commands={len(commands)}")
         failures = send_all(tokens, posts) if posts else 0
         failures += send_commands(sessions, commands) if commands else 0
