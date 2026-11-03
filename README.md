@@ -41,6 +41,8 @@ uv run slack-sender message_a --config test.json  # Use another config file
 
 If the selected key has no posts or commands, the CLI does nothing and exits successfully. If any operation fails, it exits with code 1.
 
+Before sending, the CLI prints `run: key=<key> posts=<n> commands=<n>`. Each result line that follows (`sent:`, `linked:`, `submitted:`) belongs to that key, which helps when reading logs from several runs.
+
 ## Dry run
 
 `--dry-run` applies SSID filtering and `--append`, then shows the planned posts and commands without sending them.

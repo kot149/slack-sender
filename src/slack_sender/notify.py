@@ -385,6 +385,7 @@ def main() -> int:
     if args.dry_run:
         failures = preview_all(tokens, posts) + preview_commands(commands)
     else:
+        print(f"run: key={args.key} posts={len(posts)} commands={len(commands)}")
         failures = send_all(tokens, posts) if posts else 0
         failures += send_commands(sessions, commands) if commands else 0
     return 1 if failures else 0

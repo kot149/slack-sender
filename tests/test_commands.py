@@ -86,3 +86,16 @@ def test_main_reads_the_config_option(monkeypatch):
 
     assert notify.main() == 0
     assert paths == ["test.json"]
+
+
+def test_main_logs_the_key_before_sending(monkeypatch, capsys):
+    cfg = {
+        "commands": {"action": [{"team": "T1", "channel": "C1", "command": "/example"}]},
+        "slack_command_sessions": {"T1": {"token": "xoxc-one", "cookie": "xoxd-one"}},
+    }
+    monkeypatch.setattr(notify, "load_config", lambda path=None: cfg)
+    monkeypatch.setattr(notify, "send_commands", lambda sessions, items: 0)
+    monkeypatch.setattr("sys.argv", ["slack-sender", "action"])
+
+    assert notify.main() == 0
+    assert "run: key=action posts=0 commands=1" in capsys.readouterr().out
